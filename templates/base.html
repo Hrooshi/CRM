@@ -94,13 +94,15 @@
     <!-- ====================================================================
          MAIN CONTENT WRAPPER
          ==================================================================== -->
+    <button class="mobile-backdrop" id="mobileNavBackdrop" type="button" aria-label="Close navigation menu"></button>
+
     <div class="main-wrapper">
       
       <!-- Top Navigation Bar -->
       <header class="topbar">
         <div class="topbar-left">
           <!-- Mobile Menu Button -->
-          <button class="mobile-toggle-btn" id="mobileSidebarToggle" aria-label="Toggle Navigation">
+          <button class="mobile-toggle-btn" id="mobileSidebarToggle" aria-label="Toggle Navigation" aria-controls="appSidebar" aria-expanded="false">
             <svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
@@ -167,10 +169,10 @@
   <!-- ====================================================================
        UNIVERSAL ADD CUSTOMER MODAL (Accessible from any page via topbar)
        ==================================================================== -->
-  <div class="modal-overlay" id="addCustomerModal">
+  <div class="modal-overlay" id="addCustomerModal" role="dialog" aria-modal="true" aria-labelledby="addCustomerModalTitle">
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">+ Add New Customer</h3>
+        <h3 class="modal-title" id="addCustomerModalTitle">+ Add New Customer</h3>
         <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
       </div>
       <form action="{{ url_for('crm.customer_add') }}" method="POST">
@@ -228,10 +230,10 @@
   <!-- ====================================================================
        UNIVERSAL DELETE CONFIRMATION MODAL
        ==================================================================== -->
-  <div class="modal-overlay" id="deleteConfirmModal">
+  <div class="modal-overlay" id="deleteConfirmModal" role="dialog" aria-modal="true" aria-labelledby="deleteConfirmTitle">
     <div class="modal-dialog" style="max-width: 440px;">
       <div class="modal-header">
-        <h3 class="modal-title" style="color: #dc2626;">Confirm Deletion</h3>
+        <h3 class="modal-title" id="deleteConfirmTitle" style="color: #dc2626;">Confirm Deletion</h3>
         <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
       </div>
       <form id="universalDeleteForm" method="POST">

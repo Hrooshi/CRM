@@ -27,10 +27,19 @@ document.addEventListener("DOMContentLoaded", () => {
 function initSidebar() {
   const toggleBtn = document.getElementById("mobileSidebarToggle");
   const sidebar = document.getElementById("appSidebar");
+  const backdrop = document.getElementById("mobileNavBackdrop");
 
   if (toggleBtn && sidebar) {
+    const setSidebarOpen = (open) => {
+      sidebar.classList.toggle("open", open);
+      if (backdrop) backdrop.classList.toggle("active", open);
+      toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      document.body.classList.toggle("nav-open", open);
+    };
+
     toggleBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
+      const shouldOpen = !sidebar.classList.contains("open");
+      setSidebarOpen(shouldOpen);
     });
 
     // Close when clicking outside on mobile
@@ -41,8 +50,16 @@ function initSidebar() {
         !sidebar.contains(e.target) &&
         !toggleBtn.contains(e.target)
       ) {
-        sidebar.classList.remove("open");
+        setSidebarOpen(false);
       }
+    });
+
+    if (backdrop) {
+      backdrop.addEventListener("click", () => setSidebarOpen(false));
+    }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) setSidebarOpen(false);
     });
   }
 }
@@ -122,8 +139,10 @@ function initDynamicModals() {
       const notes = btn.getAttribute("data-notes");
 
       const form = document.getElementById("editCustomerForm");
+      const customerId = Number.parseInt(id, 10);
       if (form) {
-        form.action = `/customers/edit/${id}`;
+        if (!Number.isInteger(customerId) || customerId < 1) return;
+        form.action = `/customers/edit/${customerId}`;
         document.getElementById("edit_customer_name").value = name || "";
         document.getElementById("edit_customer_email").value = email || "";
         document.getElementById("edit_customer_phone").value = phone || "";
@@ -146,8 +165,10 @@ function initDynamicModals() {
       const status = btn.getAttribute("data-status");
 
       const form = document.getElementById("editFollowupForm");
+      const followupId = Number.parseInt(id, 10);
       if (form) {
-        form.action = `/followups/edit/${id}`;
+        if (!Number.isInteger(followupId) || followupId < 1) return;
+        form.action = `/followups/edit/${followupId}`;
         document.getElementById("edit_followup_reason").value = reason || "";
         document.getElementById("edit_followup_date").value = date || "";
         document.getElementById("edit_followup_priority").value = priority || "Medium";
@@ -166,9 +187,21 @@ function initDynamicModals() {
 
       const deleteForm = document.getElementById("universalDeleteForm");
       const deleteText = document.getElementById("deleteConfirmItemText");
+      const deleteMatch = (actionUrl || "").match(/^\/(customers|interactions|followups)\/delete\/(\d+)$/);
 
-      if (deleteForm) {
-        deleteForm.action = actionUrl;
+      if (deleteForm && deleteMatch) {
+        const entity = deleteMatch[1];
+        const recordId = Number.parseInt(deleteMatch[2], 10);
+        if (!Number.isInteger(recordId) || recordId < 1) return;
+        if (entity === "customers") {
+          deleteForm.action = `/customers/delete/${recordId}`;
+        } else if (entity === "interactions") {
+          deleteForm.action = `/interactions/delete/${recordId}`;
+        } else if (entity === "followups") {
+          deleteForm.action = `/followups/delete/${recordId}`;
+        } else {
+          return;
+        }
         if (deleteText) {
           deleteText.textContent = `Are you sure you want to delete ${title}? This action cannot be undone.`;
         }
@@ -211,9 +244,15 @@ function initClientTableSearch() {
 // 5. ALERT AUTO-DISMISS
 // ---------------------------------------------------------------------------
 function initAlerts() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   document.querySelectorAll(".alert").forEach((alert) => {
     // Auto fade after 5 seconds
     setTimeout(() => {
+      if (prefersReducedMotion) {
+        alert.remove();
+        return;
+      }
       alert.style.transition = "opacity 0.4s ease";
       alert.style.opacity = "0";
       setTimeout(() => alert.remove(), 400);
