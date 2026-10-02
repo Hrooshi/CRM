@@ -126,13 +126,6 @@ function initModals() {
 // 3. DYNAMIC EDIT & DELETE MODALS
 // ---------------------------------------------------------------------------
 function initDynamicModals() {
-  const sanitizeLocalFormAction = (path, allowedPatterns) => {
-    if (!path) return null;
-    if (!path.startsWith("/")) return null;
-    if (allowedPatterns.some((pattern) => pattern.test(path))) return path;
-    return null;
-  };
-
   // A. Edit Customer Modal Population
   document.querySelectorAll(".btn-edit-customer").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -146,10 +139,10 @@ function initDynamicModals() {
       const notes = btn.getAttribute("data-notes");
 
       const form = document.getElementById("editCustomerForm");
-      const safeAction = sanitizeLocalFormAction(`/customers/edit/${id}`, [/^\/customers\/edit\/\d+$/]);
+      const customerId = Number.parseInt(id, 10);
       if (form) {
-        if (!safeAction) return;
-        form.action = safeAction;
+        if (!Number.isInteger(customerId) || customerId < 1) return;
+        form.action = `/customers/edit/${customerId}`;
         document.getElementById("edit_customer_name").value = name || "";
         document.getElementById("edit_customer_email").value = email || "";
         document.getElementById("edit_customer_phone").value = phone || "";
@@ -172,10 +165,10 @@ function initDynamicModals() {
       const status = btn.getAttribute("data-status");
 
       const form = document.getElementById("editFollowupForm");
-      const safeAction = sanitizeLocalFormAction(`/followups/edit/${id}`, [/^\/followups\/edit\/\d+$/]);
+      const followupId = Number.parseInt(id, 10);
       if (form) {
-        if (!safeAction) return;
-        form.action = safeAction;
+        if (!Number.isInteger(followupId) || followupId < 1) return;
+        form.action = `/followups/edit/${followupId}`;
         document.getElementById("edit_followup_reason").value = reason || "";
         document.getElementById("edit_followup_date").value = date || "";
         document.getElementById("edit_followup_priority").value = priority || "Medium";
@@ -194,14 +187,13 @@ function initDynamicModals() {
 
       const deleteForm = document.getElementById("universalDeleteForm");
       const deleteText = document.getElementById("deleteConfirmItemText");
-      const safeAction = sanitizeLocalFormAction(actionUrl, [
-        /^\/customers\/delete\/\d+$/,
-        /^\/interactions\/delete\/\d+$/,
-        /^\/followups\/delete\/\d+$/
-      ]);
+      const deleteMatch = (actionUrl || "").match(/^\/(customers|interactions|followups)\/delete\/(\d+)$/);
 
-      if (deleteForm && safeAction) {
-        deleteForm.action = safeAction;
+      if (deleteForm && deleteMatch) {
+        const entity = deleteMatch[1];
+        const recordId = Number.parseInt(deleteMatch[2], 10);
+        if (!Number.isInteger(recordId) || recordId < 1) return;
+        deleteForm.action = `/${entity}/delete/${recordId}`;
         if (deleteText) {
           deleteText.textContent = `Are you sure you want to delete ${title}? This action cannot be undone.`;
         }
