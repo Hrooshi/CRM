@@ -193,7 +193,15 @@ function initDynamicModals() {
         const entity = deleteMatch[1];
         const recordId = Number.parseInt(deleteMatch[2], 10);
         if (!Number.isInteger(recordId) || recordId < 1) return;
-        deleteForm.action = `/${entity}/delete/${recordId}`;
+        if (entity === "customers") {
+          deleteForm.action = `/customers/delete/${recordId}`;
+        } else if (entity === "interactions") {
+          deleteForm.action = `/interactions/delete/${recordId}`;
+        } else if (entity === "followups") {
+          deleteForm.action = `/followups/delete/${recordId}`;
+        } else {
+          return;
+        }
         if (deleteText) {
           deleteText.textContent = `Are you sure you want to delete ${title}? This action cannot be undone.`;
         }
