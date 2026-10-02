@@ -15,13 +15,29 @@ Why SQLite for a College Mini Project?
 =============================================================================
 """
 
-import sqlite3
 import os
+import sqlite3
 from datetime import datetime, timedelta
 
 # Database file path in the project directory
 DB_NAME = "smallbiz.db"
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), DB_NAME)
+
+
+def _resolve_db_path():
+    """
+    Resolves SQLite path for local and serverless environments.
+    - Local development defaults to repository-root smallbiz.db
+    - Vercel/serverless defaults to /tmp/smallbiz.db (ephemeral filesystem)
+    - DATABASE_PATH can override both defaults
+    """
+    configured_path = os.environ.get("DATABASE_PATH")
+    if configured_path:
+        return configured_path
+
+    if os.environ.get("VERCEL") == "1":
+        return os.path.join("/tmp", DB_NAME)
+
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), DB_NAME)
 
 
 def get_db_connection():
@@ -30,7 +46,10 @@ def get_db_connection():
     - row_factory = sqlite3.Row allows column access by name (e.g., row['email'])
     - foreign_keys = ON ensures relational constraints (e.g., ON DELETE CASCADE)
     """
-    conn = sqlite3.connect(DB_PATH)
+    db_path = _resolve_db_path()
+    db_dir = os.path.dirname(os.path.abspath(db_path))
+    os.makedirs(db_dir, exist_ok=True)
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON;")
     return conn

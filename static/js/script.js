@@ -27,10 +27,19 @@ document.addEventListener("DOMContentLoaded", () => {
 function initSidebar() {
   const toggleBtn = document.getElementById("mobileSidebarToggle");
   const sidebar = document.getElementById("appSidebar");
+  const backdrop = document.getElementById("mobileNavBackdrop");
 
   if (toggleBtn && sidebar) {
+    const setSidebarOpen = (open) => {
+      sidebar.classList.toggle("open", open);
+      if (backdrop) backdrop.classList.toggle("active", open);
+      toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
+      document.body.classList.toggle("nav-open", open);
+    };
+
     toggleBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
+      const shouldOpen = !sidebar.classList.contains("open");
+      setSidebarOpen(shouldOpen);
     });
 
     // Close when clicking outside on mobile
@@ -41,8 +50,16 @@ function initSidebar() {
         !sidebar.contains(e.target) &&
         !toggleBtn.contains(e.target)
       ) {
-        sidebar.classList.remove("open");
+        setSidebarOpen(false);
       }
+    });
+
+    if (backdrop) {
+      backdrop.addEventListener("click", () => setSidebarOpen(false));
+    }
+
+    window.addEventListener("resize", () => {
+      if (window.innerWidth > 768) setSidebarOpen(false);
     });
   }
 }
@@ -211,9 +228,15 @@ function initClientTableSearch() {
 // 5. ALERT AUTO-DISMISS
 // ---------------------------------------------------------------------------
 function initAlerts() {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   document.querySelectorAll(".alert").forEach((alert) => {
     // Auto fade after 5 seconds
     setTimeout(() => {
+      if (prefersReducedMotion) {
+        alert.remove();
+        return;
+      }
       alert.style.transition = "opacity 0.4s ease";
       alert.style.opacity = "0";
       setTimeout(() => alert.remove(), 400);

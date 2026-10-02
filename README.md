@@ -225,7 +225,31 @@ Open your browser and navigate to:
 
 ---
 
-## 11. Recommended Viva Demonstration Flow (For Professors)
+## 11. Deploy to Vercel (Flask Runtime)
+
+This repository is configured for Vercel Python runtime (`app.py` as WSGI entrypoint).
+
+### 1) Connect the Repository
+Import this GitHub repository into Vercel and keep the default root directory.
+
+### 2) Build Configuration
+- `requirements.txt` installs Python dependencies
+- `vercel.json` routes requests to Flask (`app.py`)
+- WSGI app entrypoint is `app:app`
+
+### 3) Environment Variables
+Set these in **Vercel → Project Settings → Environment Variables**:
+- `SECRET_KEY` (required in production)
+- `DATABASE_PATH` (optional; defaults to `/tmp/smallbiz.db` on Vercel)
+- `FLASK_DEBUG` (optional; keep `0` in production)
+
+### 4) SQLite Persistence Limitation
+SQLite on serverless instances is **ephemeral** and **not durable across instances/deployments**.  
+For persistent production CRM data, use an external managed database (for example Postgres/MySQL) and keep SQLite for local development or demos.
+
+---
+
+## 12. Recommended Viva Demonstration Flow (For Professors)
 Follow this exact sequence during your college viva demonstration:
 
 1. **Open Dashboard (`/dashboard`)**:
@@ -255,7 +279,7 @@ Follow this exact sequence during your college viva demonstration:
 
 ---
 
-## 12. How to Explain This Project in Viva (Q&A Preparation)
+## 13. How to Explain This Project in Viva (Q&A Preparation)
 
 ### Q1: What is a CRM and why is it important?
 > **Answer**: CRM stands for Customer Relationship Management. It is a system that helps businesses manage interactions with current and potential customers. Instead of keeping customer contacts and notes in disorganized notebooks or chat apps, a CRM centralizes everything into a searchable database so no sales lead or follow-up is forgotten.
@@ -303,7 +327,7 @@ Follow this exact sequence during your college viva demonstration:
 
 ---
 
-## 13. Future Scope
+## 14. Future Scope
 If this project is expanded into a final-year major project, the following enhancements could be added:
 1. **User Authentication & Role-Based Access Control**: Login for managers vs. sales staff.
 2. **Email & WhatsApp Integration**: Direct one-click messaging via Twilio or SMTP.

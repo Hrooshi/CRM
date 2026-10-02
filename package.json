@@ -1,5 +1,7 @@
-"scripts": {
-  "dev": "vite",
-  "build": "vite build",
-  "start": "vite preview"
+{
+  "name": "crm-flask",
+  "private": true,
+  "scripts": {
+    "start": "python app.py"
+  }
 }
