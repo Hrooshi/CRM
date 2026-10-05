@@ -21,8 +21,10 @@ How to Run:
 """
 
 import os
-from flask import Flask
+import secrets
+from flask import Flask, abort, g, redirect, request, session, url_for
 from database import init_db
+import models
 from routes import crm_bp
 
 def create_app():
@@ -30,7 +32,15 @@ def create_app():
     app = Flask(__name__)
     
     # Secret key used for session signing and flash messages
-    app.secret_key = os.environ.get("SECRET_KEY", "crm-college-project-secret-2026")
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key and os.environ.get("VERCEL") == "1":
+        raise RuntimeError("Set a strong SECRET_KEY environment variable before deployment.")
+    app.secret_key = secret_key or secrets.token_hex(32)
+    app.config.update(
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE", "0") == "1"
+    )
 
     # Initialize the SQLite database and seed initial demo records
     with app.app_context():
@@ -38,6 +48,63 @@ def create_app():
 
     # Register the main Blueprint containing all CRM routes
     app.register_blueprint(crm_bp)
+    
+    @app.before_request
+    def require_login_and_authorize():
+        endpoint = request.endpoint
+        if endpoint == "static":
+            return None
+
+        if request.method == "POST":
+            expected = session.get("_csrf_token", "")
+            supplied = request.form.get("_csrf_token", "") or request.headers.get("X-CSRF-Token", "")
+            if not expected or not secrets.compare_digest(expected, supplied):
+                abort(400, "Invalid or missing CSRF token.")
+
+        public_endpoints = {"crm.login", "crm.initial_admin"}
+        if endpoint in public_endpoints:
+            if endpoint == "crm.initial_admin" and models.get_user_count() > 0:
+                return redirect(url_for("crm.login"))
+            return None
+
+        user_id = session.get("user_id")
+        if not user_id:
+            return redirect(url_for("crm.login", next=request.path))
+
+        user = models.get_user_by_id(user_id)
+        if not user:
+            session.clear()
+            return redirect(url_for("crm.login"))
+        g.current_user = user
+
+        if user["must_change_password"] and endpoint not in {"crm.change_password", "crm.logout"}:
+            return redirect(url_for("crm.change_password"))
+
+        admin_only = {
+            "crm.settings_page", "crm.reset_db_action", "crm.download_project_zip",
+            "crm.download_single_file", "crm.download_customers_excel",
+            "crm.create_user", "crm.reset_user_password"
+        }
+        if endpoint in admin_only and user["role"] != "admin":
+            abort(403)
+
+        if user["role"] == "customer":
+            if endpoint == "crm.home":
+                if not user["customer_id"]:
+                    abort(403)
+                return redirect(url_for("crm.customer_portal", customer_id=user["customer_id"]))
+            if endpoint == "crm.customer_portal" and user["customer_id"] == request.view_args.get("customer_id"):
+                return None
+            if endpoint in {"crm.change_password", "crm.logout"}:
+                return None
+            abort(403)
+
+        return None
+
+    @app.context_processor
+    def inject_security_context():
+        csrf_token = session.setdefault("_csrf_token", secrets.token_urlsafe(32))
+        return {"current_user": getattr(g, "current_user", None), "csrf_token": csrf_token}
 
     # Custom Jinja template filters for clean formatting in HTML
     @app.template_filter("badge_color")

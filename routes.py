@@ -19,13 +19,124 @@ flash messages, and Jinja2 template rendering for college viva examinations.
 import io
 import os
 import re
+import sqlite3
 import zipfile
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, abort
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, abort, session
+from openpyxl import Workbook
+from werkzeug.security import check_password_hash, generate_password_hash
 import models
 from database import reset_database
 
 # Create Flask Blueprint for modular routing
 crm_bp = Blueprint("crm", __name__)
+
+
+def valid_password(password):
+    return len(password) >= 12
+
+
+@crm_bp.route("/login", methods=["GET", "POST"])
+def login():
+    if models.get_user_count() == 0:
+        return redirect(url_for("crm.initial_admin"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        user = models.get_user_by_email(email)
+        if user and check_password_hash(user["password_hash"], request.form.get("password", "")):
+            session.clear()
+            session["user_id"] = user["id"]
+            return redirect(url_for("crm.change_password" if user["must_change_password"] else "crm.home"))
+        flash("Email or password was not recognized.", "danger")
+    return render_template("login.html", setup_required=False, register_customer=False)
+
+
+@crm_bp.route("/setup-admin", methods=["GET", "POST"])
+def initial_admin():
+    if models.get_user_count() > 0:
+        return redirect(url_for("crm.login"))
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+        confirmation = request.form.get("confirm_password", "")
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+            flash("Enter a valid email address.", "danger")
+        elif not valid_password(password):
+            flash("Use a password with at least 12 characters.", "danger")
+        elif password != confirmation:
+            flash("The passwords do not match.", "danger")
+        else:
+            models.create_user(email, generate_password_hash(password), "admin")
+            flash("Admin account created. Please sign in.", "success")
+            return redirect(url_for("crm.login"))
+    return render_template("login.html", setup_required=True, register_customer=False)
+
+
+@crm_bp.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    flash("You have been signed out.", "info")
+    return redirect(url_for("crm.login"))
+
+
+@crm_bp.route("/change-password", methods=["GET", "POST"])
+def change_password():
+    user = models.get_user_by_id(session["user_id"])
+    if request.method == "POST":
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirmation = request.form.get("confirm_password", "")
+        if not check_password_hash(user["password_hash"], current_password):
+            flash("Current password is incorrect.", "danger")
+        elif not valid_password(new_password):
+            flash("Use a password with at least 12 characters.", "danger")
+        elif new_password != confirmation:
+            flash("The new passwords do not match.", "danger")
+        else:
+            models.update_user_password(user["id"], generate_password_hash(new_password))
+            flash("Password updated successfully.", "success")
+            return redirect(url_for("crm.home"))
+    return render_template("change_password.html")
+
+
+@crm_bp.route("/admin/users", methods=["POST"])
+def create_user():
+    email = request.form.get("email", "").strip().lower()
+    role = request.form.get("role", "")
+    password = request.form.get("password", "")
+    customer_id = None
+    if role == "customer":
+        customer = models.get_customer_by_email(request.form.get("customer_email", "").strip())
+        if not customer:
+            flash("For a customer account, use an existing customer's email.", "danger")
+            return redirect(url_for("crm.settings_page"))
+        customer_id = customer["id"]
+        email = customer["email"].lower()
+    if role not in {"admin", "staff", "customer"} or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        flash("Select a valid role and enter a valid email address.", "danger")
+    elif not valid_password(password):
+        flash("Temporary passwords must have at least 12 characters.", "danger")
+    else:
+        try:
+            models.create_user(email, generate_password_hash(password), role, customer_id, True)
+        except sqlite3.IntegrityError:
+            flash("That email or customer profile already has an account.", "danger")
+        else:
+            flash("Account created. The user must change the temporary password at sign-in.", "success")
+    return redirect(url_for("crm.settings_page"))
+
+
+@crm_bp.route("/admin/users/<int:user_id>/reset-password", methods=["POST"])
+def reset_user_password(user_id):
+    user = models.get_user_by_id(user_id)
+    password = request.form.get("password", "")
+    if not user:
+        abort(404)
+    if not valid_password(password):
+        flash("Temporary passwords must have at least 12 characters.", "danger")
+    else:
+        models.update_user_password(user_id, generate_password_hash(password), True)
+        flash("Password reset. The user must change it at next sign-in.", "success")
+    return redirect(url_for("crm.settings_page"))
 
 
 def validate_customer_form(name, email, phone):
@@ -73,6 +184,21 @@ def dashboard():
         active_page="dashboard",
         data=data,
         settings=settings
+    )
+
+
+@crm_bp.route("/my-account/<int:customer_id>")
+def customer_portal(customer_id):
+    customer = models.get_customer_by_id(customer_id)
+    if not customer:
+        abort(404)
+    return render_template(
+        "customer_portal.html",
+        active_page="account",
+        customer=customer,
+        interactions=models.get_customer_interactions(customer_id),
+        followups=models.get_customer_followups(customer_id),
+        settings=models.get_settings()
     )
 
 
@@ -375,7 +501,35 @@ def settings_page():
     return render_template(
         "settings.html",
         active_page="settings",
-        settings=current_settings
+        settings=current_settings,
+        users=models.list_users()
+    )
+
+
+@crm_bp.route("/download-customers.xlsx")
+def download_customers_excel():
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Customers"
+    columns = ["ID", "Name", "Email", "Phone", "Company", "Address", "Status", "Notes", "Created", "Last Contact"]
+    sheet.append(columns)
+    for customer in models.get_customers():
+        values = [customer[key] for key in (
+            "id", "name", "email", "phone", "company", "address", "status", "notes", "created_at", "last_contact"
+        )]
+        sheet.append([
+            "'" + value if isinstance(value, str) and value.startswith(("=", "+", "-", "@")) else value
+            for value in values
+        ])
+
+    output = io.BytesIO()
+    workbook.save(output)
+    output.seek(0)
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name="crm_customers.xlsx"
     )
 
 

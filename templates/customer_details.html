@@ -235,6 +235,7 @@
             </td>
             <td style="text-align: right;">
               <form action="{{ url_for('crm.followup_toggle', followup_id=fu.id) }}" method="POST" style="display: inline-block;">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                 {% if fu.status == 'Pending' %}
                   <button type="submit" class="btn btn-success btn-sm">Mark Done</button>
                 {% else %}
@@ -265,6 +266,7 @@
       <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
     </div>
     <form action="{{ url_for('crm.interaction_add') }}" method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="customer_id" value="{{ customer.id }}">
       <div class="modal-body">
         
@@ -320,6 +322,7 @@
       <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
     </div>
     <form action="{{ url_for('crm.followup_add') }}" method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <input type="hidden" name="customer_id" value="{{ customer.id }}">
       <div class="modal-body">
         
@@ -365,6 +368,7 @@
       <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
     </div>
     <form id="editCustomerForm" method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group">

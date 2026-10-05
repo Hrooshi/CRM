@@ -20,6 +20,7 @@
     </div>
     
     <form action="{{ url_for('crm.settings_page') }}" method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="card-body">
         
         <div class="form-group">
@@ -60,6 +61,62 @@
     </form>
   </div>
 
+  <div class="card">
+    <div class="card-header"><div class="card-title">User Accounts</div></div>
+    <div class="card-body">
+      <form action="{{ url_for('crm.create_user') }}" method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="account_role">Role</label>
+            <select class="form-control" id="account_role" name="role" required>
+              <option value="staff">Staff</option>
+              <option value="customer">Customer</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="account_email">Email (admin/staff accounts)</label>
+            <input class="form-control" id="account_email" name="email" type="email">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="account_customer_email">Existing customer email (customer accounts)</label>
+            <input class="form-control" id="account_customer_email" name="customer_email" type="email">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="account_password">Temporary password (12+ characters)</label>
+            <input class="form-control" id="account_password" name="password" type="password" minlength="12" required>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Create account</button>
+      </form>
+
+      <h4 style="margin: 24px 0 10px;">Current accounts</h4>
+      {% for user in users %}
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--border-light);">
+          <div><strong>{{ user.email }}</strong><br><span>{{ user.role|capitalize }}{% if user.customer_name %} · {{ user.customer_name }}{% endif %}</span></div>
+          <form action="{{ url_for('crm.reset_user_password', user_id=user.id) }}" method="POST" style="display: flex; gap: 8px; align-items: center;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <input class="form-control" type="password" name="password" minlength="12" placeholder="Temporary password" aria-label="Temporary password for {{ user.email }}" required>
+            <button class="btn btn-secondary" type="submit">Reset</button>
+          </form>
+        </div>
+      {% else %}
+        <p>No accounts have been created.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><div class="card-title">Customer Data Export</div></div>
+    <div class="card-body">
+      <p style="font-size: 0.88rem; color: #475569; margin-bottom: 14px;">Download all customer records as an Excel workbook (.xlsx).</p>
+      <a href="{{ url_for('crm.download_customers_excel') }}" class="btn btn-primary">Download Customers (.xlsx)</a>
+    </div>
+  </div>
+
   <!-- ====================================================================
        DEMO TOOLS: RESET SAMPLE DATA (For Viva & Evaluation)
        ==================================================================== -->
@@ -78,6 +135,7 @@
         Clicking this button repopulates the 10 standard demo customers, 15+ interactions, and 8+ scheduled follow-ups.
       </p>
       <form action="{{ url_for('crm.reset_db_action') }}" method="POST" onsubmit="return confirm('Reset all data back to the default sample records? Any newly added test records will be refreshed.');">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
         <button type="submit" class="btn btn-secondary" style="border-color: #f59e0b; color: #b45309;">
           ↻ Reset Database to Sample Records
         </button>

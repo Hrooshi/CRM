@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}My Account{% endblock %}
+{% block page_title %}My Account{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header"><div class="card-title">Customer profile</div></div>
+  <div class="card-body">
+    <h3>{{ customer.name }}</h3>
+    <p>{{ customer.email }} · {{ customer.phone }}</p>
+    {% if customer.company %}<p>{{ customer.company }}</p>{% endif %}
+    {% if customer.address %}<p>{{ customer.address }}</p>{% endif %}
+    <p>Status: <strong>{{ customer.status }}</strong></p>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><div class="card-title">Interaction history</div></div>
+  <div class="card-body">
+    {% if interactions %}
+      {% for item in interactions %}<p><strong>{{ item.interaction_date }} · {{ item.type }}</strong><br>{{ item.description }}</p>{% endfor %}
+    {% else %}<p>No interactions have been recorded.</p>{% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><div class="card-title">Follow-ups</div></div>
+  <div class="card-body">
+    {% if followups %}
+      {% for item in followups %}<p><strong>{{ item.follow_up_date }} · {{ item.status }}</strong><br>{{ item.reason }}</p>{% endfor %}
+    {% else %}<p>No follow-ups have been recorded.</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

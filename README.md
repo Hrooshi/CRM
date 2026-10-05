@@ -22,7 +22,7 @@ Small and medium businesses frequently struggle to manage customer communication
 
 ## 3. Objective
 To develop an intuitive, accessible, and low-cost CRM system that:
-1. Centralizes customer records and business contact details in an encrypted local database.
+1. Centralizes customer records and business contact details in a local SQLite database.
 2. Tracks interaction timelines and notes across calls, emails, and meetings.
 3. Provides automated follow-up reminders with priority queues.
 4. Generates instant graphical reports on client pipeline distribution and communication channels.
@@ -221,7 +221,19 @@ python app.py
 
 ### Step 5: Open in Web Browser
 Open your browser and navigate to:  
-👉 **`http://127.0.0.1:5000/`**
+**`http://127.0.0.1:5000/`**
+
+### First Login and Account Workflow
+1. On first launch, create the initial administrator at `/setup-admin`. Use a unique password with at least 12 characters.
+2. Sign in at `/login`. The administrator creates staff, customer, or additional admin accounts from **Settings → User Accounts**.
+3. The administrator creates customer accounts using the email already stored on that customer's record and provides a temporary password to the customer through a trusted channel.
+4. New accounts created by an admin must change their temporary password at first sign-in. Signed-in users can change their password from the top bar; an admin can reset another account's password from Settings.
+5. Use **Settings → Customer Data Export → Download Customers (.xlsx)** to export customer records. Sign out with **Log out**.
+
+Passwords are stored as one-way hashes. The app requires signed-in sessions, role-based access, and CSRF tokens for POST requests. Recovery is admin-assisted; email reset links require a configured mail delivery service.
+
+### Customer Capacity
+The local SQLite database can handle 10,000 customer records for this small-business workload. The app adds indexes for common status and customer-relationship queries. For production use, paginate large customer lists and move to a managed database when deploying to serverless hosting or when concurrent writes become substantial. SQLite does not encrypt the database file by default; protect the host and backups.
 
 ---
 
@@ -242,6 +254,7 @@ Set these in **Vercel → Project Settings → Environment Variables**:
 - `SECRET_KEY` (required in production)
 - `DATABASE_PATH` (optional; defaults to `/tmp/smallbiz.db` on Vercel)
 - `FLASK_DEBUG` (optional; keep `0` in production)
+- `COOKIE_SECURE=1` when the app is served over HTTPS
 
 ### 4) SQLite Persistence Limitation
 SQLite on serverless instances is **ephemeral** and **not durable across instances/deployments**.  

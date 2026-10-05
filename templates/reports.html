@@ -120,25 +120,6 @@
 
 </div>
 
-<!-- Viva Explanation Box on Reports -->
-<div class="card">
-  <div class="card-header">
-    <div class="card-title">
-      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span>How Reports are Computed (Viva Explanation)</span>
-    </div>
-  </div>
-  <div class="card-body">
-    <p style="font-size: 0.88rem; color: #334155; line-height: 1.6;">
-      In this system, analytics are calculated dynamically using SQL aggregate functions such as 
-      <code>SELECT COUNT(*) FROM ... GROUP BY status</code> and <code>GROUP BY type</code>.
-      These queries execute directly on the local <strong>SQLite3 database</strong> and are structured into clean Python dictionaries inside <code>models.py</code>. 
-      The results are rendered into responsive charts on the frontend using <strong>Chart.js</strong>, with an automatic pure-CSS fallback if running offline.
-    </p>
-  </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

@@ -221,6 +221,7 @@
 
                 <!-- Mark as Completed form action -->
                 <form action="{{ url_for('crm.followup_toggle', followup_id=fu.id) }}" method="POST" style="margin: 0;">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
                   <button type="submit" class="btn btn-secondary btn-sm" title="Mark as Completed" style="padding: 4px 8px; font-size: 0.75rem;">
                     ✓ Done
                   </button>

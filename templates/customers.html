@@ -207,6 +207,7 @@
       <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
     </div>
     <form id="editCustomerForm" method="POST">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group">

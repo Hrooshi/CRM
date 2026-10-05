@@ -538,3 +538,71 @@ def update_settings(business_name, owner_email, owner_phone, currency="₹", the
     conn.commit()
     conn.close()
     return True
+
+
+# ===========================================================================
+# USER ACCOUNTS
+# ===========================================================================
+
+def get_user_count():
+    conn = get_db_connection()
+    count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+    conn.close()
+    return count
+
+
+def get_user_by_email(email):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+    conn.close()
+    return user
+
+
+def get_user_by_id(user_id):
+    conn = get_db_connection()
+    user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    conn.close()
+    return user
+
+
+def list_users():
+    conn = get_db_connection()
+    users = conn.execute("""
+        SELECT users.id, users.email, users.role, users.must_change_password,
+               customers.name AS customer_name
+        FROM users LEFT JOIN customers ON users.customer_id = customers.id
+        ORDER BY users.role, users.email
+    """).fetchall()
+    conn.close()
+    return users
+
+
+def get_customer_by_email(email):
+    conn = get_db_connection()
+    customer = conn.execute(
+        "SELECT * FROM customers WHERE email = ? COLLATE NOCASE ORDER BY id LIMIT 1",
+        (email.strip(),)
+    ).fetchone()
+    conn.close()
+    return customer
+
+
+def create_user(email, password_hash, role, customer_id=None, must_change_password=False):
+    conn = get_db_connection()
+    cursor = conn.execute("""
+        INSERT INTO users (email, password_hash, role, customer_id, must_change_password)
+        VALUES (?, ?, ?, ?, ?)
+    """, (email.strip().lower(), password_hash, role, customer_id, int(must_change_password)))
+    conn.commit()
+    user_id = cursor.lastrowid
+    conn.close()
+    return user_id
+
+
+def update_user_password(user_id, password_hash, must_change_password=False):
+    conn = get_db_connection()
+    conn.execute("""
+        UPDATE users SET password_hash = ?, must_change_password = ? WHERE id = ?
+    """, (password_hash, int(must_change_password), user_id))
+    conn.commit()
+    conn.close()

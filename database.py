@@ -116,6 +116,21 @@ def init_db(seed_if_empty=True):
     );
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        role TEXT NOT NULL CHECK (role IN ('admin', 'staff', 'customer')),
+        customer_id INTEGER UNIQUE,
+        must_change_password INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (customer_id) REFERENCES customers (id) ON DELETE CASCADE
+    );
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_interactions_customer_id ON interactions(customer_id);")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_followups_customer_id ON followups(customer_id);")
+
     conn.commit()
 
     # Seed sample data if table is currently empty

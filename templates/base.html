@@ -29,6 +29,7 @@
       </div>
 
       <!-- Navigation Links -->
+      {% if current_user.role != 'customer' %}
       <nav class="sidebar-nav">
         <!-- Dashboard -->
         <a href="{{ url_for('crm.dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
@@ -73,9 +74,11 @@
           <span>Reports</span>
         </a>
       </nav>
+      {% endif %}
 
       <!-- Sidebar Footer -->
       <div class="sidebar-footer">
+        {% if current_user.role == 'admin' %}
         <a href="{{ url_for('crm.settings_page') }}" class="nav-link {% if active_page == 'settings' %}active{% endif %}">
           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -83,6 +86,11 @@
           </svg>
           <span>Settings</span>
         </a>
+        {% endif %}
+
+        {% if current_user.role == 'customer' %}
+        <a href="{{ url_for('crm.customer_portal', customer_id=current_user.customer_id) }}" class="nav-link active">My Account</a>
+        {% endif %}
 
         <div class="student-tag">
           <span>Python Project</span>
@@ -114,6 +122,7 @@
         </div>
 
         <div class="topbar-right">
+          {% if current_user.role == 'admin' %}
           <!-- Download Complete Project as ZIP -->
           <a href="{{ url_for('crm.download_project_zip') }}" class="btn btn-secondary btn-sm" title="Download Complete 16 Files as ZIP">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,23 +130,31 @@
             </svg>
             <span>Download Project (.zip)</span>
           </a>
+          {% endif %}
 
           <!-- Quick Add Customer Shortcut -->
+          {% if current_user.role != 'customer' %}
           <button type="button" class="btn btn-primary btn-sm" data-modal-open="addCustomerModal">
             <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
             </svg>
             <span>+ Add Customer</span>
           </button>
+          {% endif %}
 
           <!-- User / Admin Profile -->
           <div class="user-badge">
-            <div class="avatar-circle">CRM</div>
+            <div class="avatar-circle">{{ current_user.email|initials }}</div>
             <div class="user-info-text">
-              <div class="name">{{ settings.business_name if settings else 'CRM' }}</div>
-              <div class="role">Admin Account</div>
+              <div class="name">{{ current_user.email }}</div>
+              <div class="role">{{ current_user.role|capitalize }}</div>
             </div>
           </div>
+          <a href="{{ url_for('crm.change_password') }}" class="btn btn-secondary btn-sm">Password</a>
+          <form action="{{ url_for('crm.logout') }}" method="POST" style="display: inline;">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Log out</button>
+          </form>
         </div>
       </header>
 
@@ -169,6 +186,7 @@
   <!-- ====================================================================
        UNIVERSAL ADD CUSTOMER MODAL (Accessible from any page via topbar)
        ==================================================================== -->
+  {% if current_user.role != 'customer' %}
   <div class="modal-overlay" id="addCustomerModal" role="dialog" aria-modal="true" aria-labelledby="addCustomerModalTitle">
     <div class="modal-dialog">
       <div class="modal-header">
@@ -176,6 +194,7 @@
         <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
       </div>
       <form action="{{ url_for('crm.customer_add') }}" method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
         <div class="modal-body">
           <div class="form-row">
             <div class="form-group">
@@ -237,6 +256,7 @@
         <button type="button" class="modal-close-btn" data-modal-close>&times;</button>
       </div>
       <form id="universalDeleteForm" method="POST">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
         <div class="modal-body">
           <p id="deleteConfirmItemText" style="color: #475569; font-size: 0.92rem;">
             Are you sure you want to delete this record? This action cannot be undone.
@@ -249,6 +269,7 @@
       </form>
     </div>
   </div>
+  {% endif %}
 
   <!-- Application Interactive Scripts -->
   <script src="{{ url_for('static', filename='js/script.js') }}"></script>
