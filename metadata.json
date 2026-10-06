@@ -1,7 +1,0 @@
-{
-  "name": "CRM Application",
-  "description": "Customer Relationship Management (CRM) web application featuring customer directory CRUD, interaction history, follow-up scheduling, and analytical reporting.",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ]
-}
